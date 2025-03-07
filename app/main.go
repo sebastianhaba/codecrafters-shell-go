@@ -40,7 +40,7 @@ func commandNotFound(cmd string) {
 }
 
 func exit(args []string) {
-	exitCode, _ := strconv.Atoi(args[0]e)
+	exitCode, _ := strconv.Atoi(args[0])
 	os.Exit(exitCode)
 }
 

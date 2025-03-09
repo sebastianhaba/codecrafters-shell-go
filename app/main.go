@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
+var supportedCommands = []string{"exit", "echo", "type"}
+
 func main() {
+
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -26,24 +29,46 @@ func main() {
 		args := cmdWithArgs[1:]
 
 		if cmd == "exit" {
-			exit(args)
+			cmdExit(args)
 		} else if cmd == "echo" {
-			echo(args)
+			cmdEcho(args)
+		} else if cmd == "type" {
+			cmdType(args)
 		} else {
-			commandNotFound(cmdWithArgs[0])
+			cmdNotFound(cmdWithArgs[0])
 		}
 	}
 }
 
-func commandNotFound(cmd string) {
+func cmdNotFound(cmd string) {
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", strings.TrimSpace(cmd))
 }
 
-func exit(args []string) {
+func cmdExit(args []string) {
 	exitCode, _ := strconv.Atoi(args[0])
 	os.Exit(exitCode)
 }
 
-func echo(args []string) {
+func cmdEcho(args []string) {
 	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args[:], " "))
+}
+
+func cmdType(args []string) {
+	cmdToCheck := args[0]
+	supportedCmd := contains(supportedCommands, cmdToCheck)
+	if supportedCmd {
+		fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", cmdToCheck)
+	} else {
+		fmt.Fprintf(os.Stdout, "%s: not found\n", cmdToCheck)
+	}
+}
+
+func contains(slice []string, element string) bool {
+	for _, item := range slice {
+		if item == element {
+			return true
+		}
+	}
+
+	return false
 }

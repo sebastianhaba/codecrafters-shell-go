@@ -35,7 +35,7 @@ func main() {
 		} else if cmd == "type" {
 			cmdType(args)
 		} else if cmdInPath, cmdPath := isCmdInPath(cmd); cmdInPath {
-			execCmdInPath(cmdPath, args)
+			execCmdInPath(cmd, cmdPath, args)
 		} else {
 			cmdNotFound(cmdWithArgs[0])
 		}
@@ -99,8 +99,9 @@ func checkCmdInPath(cmd string) string {
 	return fmt.Sprintf("%s: not found\n", cmd)
 }
 
-func execCmdInPath(cmdPath string, args []string) {
-	cmd := exec.Command(cmdPath, args...)
+func execCmdInPath(cmdName, cmdPath string, args []string) {
+	cmd := exec.Command(cmdName, args...)
+	cmd.Dir = strings.Replace(cmdPath, cmdName, "", 1)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()

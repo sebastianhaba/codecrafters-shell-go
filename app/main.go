@@ -11,7 +11,6 @@ import (
 var supportedCommands = []string{"exit", "echo", "type"}
 
 func main() {
-
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -58,9 +57,11 @@ func cmdType(args []string) {
 	supportedCmd := contains(supportedCommands, cmdToCheck)
 	if supportedCmd {
 		fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", cmdToCheck)
-	} else {
-		fmt.Fprintf(os.Stdout, "%s: not found\n", cmdToCheck)
+		return
 	}
+
+	pathResult := checkCmdInPath(cmdToCheck)
+	fmt.Fprintf(os.Stdout, "%s", pathResult)
 }
 
 func contains(slice []string, element string) bool {
@@ -71,4 +72,17 @@ func contains(slice []string, element string) bool {
 	}
 
 	return false
+}
+
+func checkCmdInPath(cmd string) string {
+	pathEnv := os.Getenv("PATH")
+	directoriesToSearch := strings.Split(pathEnv, ":")
+	for _, directory := range directoriesToSearch {
+		path := directory + "/" + cmd
+		if _, err := os.Stat(path); err == nil {
+			return fmt.Sprintf("%s is %s\n", cmd, path)
+		}
+	}
+
+	return fmt.Sprintf("%s: not found\n", cmd)
 }

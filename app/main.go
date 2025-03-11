@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -33,6 +34,8 @@ func main() {
 			cmdEcho(args)
 		} else if cmd == "type" {
 			cmdType(args)
+		} else if cmdInPath, cmdPath := isCmdInPath(cmd); cmdInPath {
+			execCmdInPath(cmdPath, args)
 		} else {
 			cmdNotFound(cmdWithArgs[0])
 		}
@@ -74,15 +77,31 @@ func contains(slice []string, element string) bool {
 	return false
 }
 
-func checkCmdInPath(cmd string) string {
+func isCmdInPath(cmd string) (bool, string) {
 	pathEnv := os.Getenv("PATH")
 	directoriesToSearch := strings.Split(pathEnv, ":")
 	for _, directory := range directoriesToSearch {
 		path := directory + "/" + cmd
 		if _, err := os.Stat(path); err == nil {
-			return fmt.Sprintf("%s is %s\n", cmd, path)
+			return true, path
 		}
 	}
 
+	return false, ""
+}
+
+func checkCmdInPath(cmd string) string {
+	exists, path := isCmdInPath(cmd)
+	if exists {
+		return fmt.Sprintf("%s is %s\n", cmd, path)
+	}
+
 	return fmt.Sprintf("%s: not found\n", cmd)
+}
+
+func execCmdInPath(cmdPath string, args []string) {
+	cmd := exec.Command(cmdPath, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
 }

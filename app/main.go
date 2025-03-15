@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var supportedCommands = []string{"exit", "echo", "type", "pwd"}
+var supportedCommands = []string{"exit", "echo", "type", "pwd", "cd"}
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
@@ -36,6 +36,8 @@ func main() {
 			cmdType(args)
 		} else if cmd == "pwd" {
 			cmdPwd()
+		} else if cmd == "cd" {
+			cmdCd(args)
 		} else if cmdInPath, cmdPath := isCmdInPath(cmd); cmdInPath {
 			execCmdInPath(cmd, cmdPath, args)
 		} else {
@@ -72,6 +74,13 @@ func cmdType(args []string) {
 func cmdPwd() {
 	currentDir, _ := os.Getwd()
 	fmt.Fprintf(os.Stdout, "%s\n", currentDir)
+}
+
+func cmdCd(args []string) {
+	path := args[0]
+	if err := os.Chdir(path); err != nil {
+		fmt.Fprintf(os.Stdout, "cd: %s: No such file or director", path)
+	}
 }
 
 func contains(slice []string, element string) bool {

@@ -79,7 +79,7 @@ func cmdPwd() {
 func cmdCd(args []string) {
 	path := args[0]
 	if err := os.Chdir(path); err != nil {
-		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory", path)
+		fmt.Fprintf(os.Stdout, "cd: %s: No such file or directory\n", path)
 	}
 }
 

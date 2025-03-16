@@ -19,7 +19,7 @@ func main() {
 
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
-		cmdWithArgs := strings.Split(input, " ")
+		cmdWithArgs := parseArgs(input)
 
 		if len(cmdWithArgs) == 0 {
 			return
@@ -46,6 +46,43 @@ func main() {
 	}
 }
 
+func parseArgs(input string) []string {
+	var result []string
+	var currentArg strings.Builder
+	inQuotes := false
+
+	for i := 0; i < len(input); i++ {
+		c := input[i]
+
+		switch c {
+		case '\'':
+			inQuotes = !inQuotes
+
+			if !inQuotes && i+1 < len(input) && input[i+1] == '\'' {
+				inQuotes = true
+				i++ // Pomijamy następny apostrof
+			}
+		case ' ', '\t':
+			if !inQuotes {
+				if currentArg.Len() > 0 {
+					result = append(result, currentArg.String())
+					currentArg.Reset()
+				}
+			} else {
+				currentArg.WriteByte(c)
+			}
+		default:
+			currentArg.WriteByte(c)
+		}
+	}
+
+	if currentArg.Len() > 0 {
+		result = append(result, currentArg.String())
+	}
+
+	return result
+}
+
 func cmdNotFound(cmd string) {
 	fmt.Fprintf(os.Stdout, "%s: command not found\n", strings.TrimSpace(cmd))
 }
@@ -56,7 +93,7 @@ func cmdExit(args []string) {
 }
 
 func cmdEcho(args []string) {
-	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args[:], " "))
+	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
 }
 
 func cmdType(args []string) {

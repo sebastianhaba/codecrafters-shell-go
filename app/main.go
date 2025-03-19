@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/codecrafters-io/shell-starter-go/app/shellcmd"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
@@ -20,28 +20,18 @@ func main() {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 		cmdWithArgs := parseArgs(input)
+		cmdName := cmdWithArgs[0]
+		args := cmdWithArgs[1:]
 
 		if len(cmdWithArgs) == 0 {
 			return
 		}
 
-		cmd := cmdWithArgs[0]
-		args := cmdWithArgs[1:]
+		cmd := shellcmd.New(cmdName)
+		result := cmd.Run(args)
 
-		if cmd == "exit" {
-			cmdExit(args)
-		} else if cmd == "echo" {
-			cmdEcho(args)
-		} else if cmd == "type" {
-			cmdType(args)
-		} else if cmd == "pwd" {
-			cmdPwd()
-		} else if cmd == "cd" {
-			cmdCd(args)
-		} else if cmdInPath, cmdPath := isCmdInPath(cmd); cmdInPath {
-			execCmdInPath(cmd, cmdPath, args)
-		} else {
-			cmdNotFound(cmdWithArgs[0])
+		if result != "" {
+			fmt.Fprintf(os.Stdout, "%s\n", result)
 		}
 	}
 }
@@ -83,19 +73,6 @@ func parseArgs(input string) []string {
 	return result
 }
 
-func cmdNotFound(cmd string) {
-	fmt.Fprintf(os.Stdout, "%s: command not found\n", strings.TrimSpace(cmd))
-}
-
-func cmdExit(args []string) {
-	exitCode, _ := strconv.Atoi(args[0])
-	os.Exit(exitCode)
-}
-
-func cmdEcho(args []string) {
-	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
-}
-
 func cmdType(args []string) {
 	cmdToCheck := args[0]
 	supportedCmd := contains(supportedCommands, cmdToCheck)
@@ -106,11 +83,6 @@ func cmdType(args []string) {
 
 	pathResult := checkCmdInPath(cmdToCheck)
 	fmt.Fprintf(os.Stdout, "%s", pathResult)
-}
-
-func cmdPwd() {
-	currentDir, _ := os.Getwd()
-	fmt.Fprintf(os.Stdout, "%s\n", currentDir)
 }
 
 func cmdCd(args []string) {

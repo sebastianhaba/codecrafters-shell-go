@@ -46,7 +46,7 @@ func New(name string) *ShellCmd {
 	var extCmdExists bool
 	if !exists {
 		if extCmdExists, extCmdPath = isCmdInPath(name); extCmdExists {
-			cmdFunc = externalCmd
+			cmdFunc = cmdExternal
 		} else {
 			cmdFunc = cmdNotFound
 		}
@@ -123,7 +123,7 @@ func cmdType(p runFunParams) string {
 	return fmt.Sprintf("%s", externalCmdResult)
 }
 
-func externalCmd(p runFunParams) string {
+func cmdExternal(p runFunParams) string {
 	var stdout bytes.Buffer
 	fileExt := ""
 

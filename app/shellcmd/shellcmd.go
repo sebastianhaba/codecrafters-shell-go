@@ -143,12 +143,17 @@ func cmdNotFound(p runFunParams) string {
 }
 
 func getHomeDir() string {
-	usr, err := user.Current()
-	if err != nil {
-		return ""
+	homeDirectory := ""
+	if runtime.GOOS == "windows" {
+		usr, err := user.Current()
+		if err == nil {
+			homeDirectory = usr.HomeDir
+		}
+	} else {
+		homeDirectory = os.Getenv("HOME")
 	}
 
-	return usr.HomeDir
+	return homeDirectory
 }
 
 func isCmdInPath(cmd string) (bool, string) {

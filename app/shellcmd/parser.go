@@ -5,30 +5,12 @@ import "strings"
 func ParseArgs(input string) []string {
 	var result []string
 	var currentArg strings.Builder
+	var i int
 	inSingleQuotes := false
 	inDoubleQuotes := false
-	escapeNext := false
 
-	for i := 0; i < len(input); i++ {
+	for i = 0; i < len(input); i++ {
 		c := input[i]
-
-		if escapeNext {
-			if inDoubleQuotes && (c == '\\' || c == '$' || c == '"' || c == '\n') {
-				currentArg.WriteByte(c)
-			} else if !inDoubleQuotes {
-				currentArg.WriteByte(c)
-			} else {
-				currentArg.WriteByte('\\')
-				currentArg.WriteByte(c)
-			}
-			escapeNext = false
-			continue
-		}
-
-		if c == '\\' {
-			escapeNext = true
-			continue
-		}
 
 		if c == '\'' && !inDoubleQuotes {
 			inSingleQuotes = !inSingleQuotes
@@ -44,6 +26,31 @@ func ParseArgs(input string) []string {
 			if currentArg.Len() > 0 {
 				result = append(result, currentArg.String())
 				currentArg.Reset()
+			}
+			continue
+		}
+
+		if c == '\\' {
+			if inSingleQuotes {
+				currentArg.WriteByte('\\')
+				continue
+			}
+
+			if i+1 < len(input) {
+				nextChar := input[i+1]
+				if inDoubleQuotes {
+					if nextChar == '$' || nextChar == '"' || nextChar == '\\' || nextChar == '`' {
+						i++
+						currentArg.WriteByte(nextChar)
+					} else {
+						currentArg.WriteByte('\\')
+					}
+				} else {
+					i++
+					currentArg.WriteByte(nextChar)
+				}
+			} else {
+				currentArg.WriteByte('\\')
 			}
 			continue
 		}

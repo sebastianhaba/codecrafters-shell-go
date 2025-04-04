@@ -17,15 +17,9 @@ func main() {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 		cmdWithArgs := shellcmd.ParseArgs(input)
-		cmdName := cmdWithArgs[0]
-		args := cmdWithArgs[1:]
 
-		if len(cmdWithArgs) == 0 {
-			return
-		}
-
-		cmd := shellcmd.New(cmdName)
-		result := cmd.Run(args)
+		cmd := shellcmd.New(cmdWithArgs.Name)
+		result := cmd.Run(cmdWithArgs)
 
 		if result != "" {
 			fmt.Fprintf(os.Stdout, "%s\n", result)

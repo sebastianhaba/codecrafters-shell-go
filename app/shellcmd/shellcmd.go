@@ -18,7 +18,7 @@ const (
 type runFunParams struct {
 	Name string
 	Path string
-	Args []string
+	Cmd  *CmdWithArgs
 }
 
 type runFunc func(p runFunParams) string
@@ -59,14 +59,14 @@ func New(name string) *ShellCmd {
 	}
 }
 
-func (s *ShellCmd) Run(args []string) string {
+func (s *ShellCmd) Run(cmd *CmdWithArgs) string {
 	if s.run == nil {
 		return ""
 	}
 
 	return s.run(runFunParams{
 		Name: s.Name,
-		Args: args,
+		Cmd:  cmd,
 		Path: s.path,
 	})
 }
@@ -74,8 +74,8 @@ func (s *ShellCmd) Run(args []string) string {
 func cmdExit(p runFunParams) string {
 	var exitCode int
 	var err error
-	if len(p.Args) > 0 {
-		exitCode, err = strconv.Atoi(p.Args[0])
+	if len(p.Cmd.Args) > 0 {
+		exitCode, err = strconv.Atoi(p.Cmd.Args[0])
 		if err != nil {
 			exitCode = 0
 		}
@@ -86,7 +86,23 @@ func cmdExit(p runFunParams) string {
 }
 
 func cmdEcho(p runFunParams) string {
-	return fmt.Sprintf("%s", strings.Join(p.Args, " "))
+	if p.Cmd.RedirectOptions.File != "" {
+		file, err := os.Create(p.Cmd.RedirectOptions.File)
+		if err != nil {
+			return ""
+		}
+
+		defer file.Close()
+
+		_, err = file.WriteString(strings.Join(p.Cmd.Args, " "))
+		if err != nil {
+			return ""
+		}
+
+		return ""
+	}
+
+	return fmt.Sprintf("%s", strings.Join(p.Cmd.Args, " "))
 }
 
 func cmdPwd(p runFunParams) string {
@@ -96,11 +112,11 @@ func cmdPwd(p runFunParams) string {
 
 func cmdCd(p runFunParams) string {
 	var path string
-	if len(p.Args) == 0 {
+	if len(p.Cmd.Args) == 0 {
 		path = ""
 	}
 
-	path = p.Args[0]
+	path = p.Cmd.Args[0]
 	if path == HomeDir {
 		path = getHomeDir()
 	}
@@ -113,7 +129,7 @@ func cmdCd(p runFunParams) string {
 }
 
 func cmdType(p runFunParams) string {
-	cmdToCheck := p.Args[0]
+	cmdToCheck := p.Cmd.Args[0]
 	_, cmdIsSupported := supportedCmd[cmdToCheck]
 	if cmdIsSupported {
 		return fmt.Sprintf("%s is a shell builtin", cmdToCheck)
@@ -125,16 +141,34 @@ func cmdType(p runFunParams) string {
 
 func cmdExternal(p runFunParams) string {
 	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 	fileExt := ""
 
 	if runtime.GOOS == "windows" {
 		fileExt = ".exe"
 	}
 
-	cmd := exec.Command(p.Name+fileExt, p.Args...)
+	cmd := exec.Command(p.Name+fileExt, p.Cmd.Args...)
 	cmd.Dir = strings.Replace(p.Path, p.Name+fileExt, "", 1)
-	cmd.Stdout = &stdout
+
+	if p.Cmd.RedirectOptions.File != "" {
+		file, err := os.Create(p.Cmd.RedirectOptions.File)
+		if err != nil {
+			return ""
+		}
+		defer file.Close()
+		cmd.Stdout = file
+		cmd.Stderr = &stderr
+	} else {
+		cmd.Stdout = &stdout
+	}
+
 	cmd.Run()
+
+	if p.Cmd.RedirectOptions.File != "" {
+		return strings.TrimSpace(stderr.String())
+	}
+
 	return strings.TrimSpace(stdout.String())
 }
 

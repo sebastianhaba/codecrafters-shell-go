@@ -3,7 +3,8 @@ package shellcmd
 import "strings"
 
 type RedirectOptions struct {
-	File string
+	StdOutputFile string
+	StdErrorFile  string
 }
 
 type CmdWithArgs struct {
@@ -95,19 +96,51 @@ func prepareArgs(cmd *CmdWithArgs, args []string) {
 		return
 	}
 
-	redirectOptionsIndex := redirectOptionsIndex(args)
-	if redirectOptionsIndex == -1 {
+	redirectStdOutputIndex := redirectStdOutputIndex(args)
+	redirectStdErrorIndex := redirectStdErrorIndex(args)
+
+	if redirectStdOutputIndex == -1 && redirectStdErrorIndex == -1 {
 		cmd.Args = args
 		return
 	}
 
-	cmd.Args = args[:redirectOptionsIndex]
-	cmd.RedirectOptions.File = args[redirectOptionsIndex+1]
+	argIndex := redirectStdOutputIndex
+	if redirectStdOutputIndex == -1 {
+		argIndex = redirectStdErrorIndex
+	} else if redirectStdErrorIndex == -1 {
+		argIndex = redirectStdOutputIndex
+	} else {
+		if redirectStdOutputIndex < redirectStdErrorIndex {
+			argIndex = redirectStdOutputIndex
+		} else {
+			argIndex = redirectStdErrorIndex
+		}
+	}
+
+	cmd.Args = args[:argIndex]
+
+	if redirectStdOutputIndex != -1 {
+		cmd.RedirectOptions.StdOutputFile = args[redirectStdOutputIndex+1]
+	}
+
+	if redirectStdErrorIndex != -1 {
+		cmd.RedirectOptions.StdErrorFile = args[redirectStdErrorIndex+1]
+	}
 }
 
-func redirectOptionsIndex(args []string) int {
+func redirectStdOutputIndex(args []string) int {
 	for i, arg := range args {
 		if arg == ">" || arg == "1>" {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func redirectStdErrorIndex(args []string) int {
+	for i, arg := range args {
+		if arg == "2>" {
 			return i
 		}
 	}

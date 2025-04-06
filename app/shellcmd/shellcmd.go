@@ -87,14 +87,27 @@ func cmdExit(p runFunParams) string {
 
 func cmdEcho(p runFunParams) string {
 	if p.Cmd.RedirectOptions.StdOutputFile != "" {
-		file, err := os.Create(p.Cmd.RedirectOptions.StdOutputFile)
-		if err != nil {
-			return ""
+		var file *os.File
+		var err error
+		if p.Cmd.RedirectOptions.StdOutputAppend {
+			file, err = os.OpenFile(p.Cmd.RedirectOptions.StdOutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return ""
+			}
+
+			defer file.Close()
+			_, err = file.WriteString("\n" + strings.Join(p.Cmd.Args, " "))
+
+		} else {
+			file, err = os.Create(p.Cmd.RedirectOptions.StdOutputFile)
+			if err != nil {
+				return ""
+			}
+
+			defer file.Close()
+			_, err = file.WriteString(strings.Join(p.Cmd.Args, " "))
 		}
 
-		defer file.Close()
-
-		_, err = file.WriteString(strings.Join(p.Cmd.Args, " "))
 		if err != nil {
 			return ""
 		}
@@ -171,11 +184,25 @@ func cmdExternal(p runFunParams) string {
 	cmd.Dir = strings.Replace(p.Path, p.Name+fileExt, "", 1)
 
 	if p.Cmd.RedirectOptions.StdOutputFile != "" {
-		file, err := os.Create(p.Cmd.RedirectOptions.StdOutputFile)
+		var file *os.File
+		var err error
+		if p.Cmd.RedirectOptions.StdOutputAppend {
+			file, err = os.OpenFile(p.Cmd.RedirectOptions.StdOutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return ""
+			}
+		} else {
+			file, err = os.Create(p.Cmd.RedirectOptions.StdOutputFile)
+		}
 		if err != nil {
 			return ""
 		}
 		defer file.Close()
+
+		if p.Cmd.RedirectOptions.StdOutputAppend {
+			file.WriteString("\n")
+		}
+
 		cmd.Stdout = file
 	} else {
 		cmd.Stdout = &stdout

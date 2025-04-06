@@ -3,8 +3,9 @@ package shellcmd
 import "strings"
 
 type RedirectOptions struct {
-	StdOutputFile string
-	StdErrorFile  string
+	StdOutputFile   string
+	StdErrorFile    string
+	StdOutputAppend bool
 }
 
 type CmdWithArgs struct {
@@ -96,7 +97,7 @@ func prepareArgs(cmd *CmdWithArgs, args []string) {
 		return
 	}
 
-	redirectStdOutputIndex := redirectStdOutputIndex(args)
+	redirectStdOutputIndex, appendStdOutput := redirectStdOutputIndex(args)
 	redirectStdErrorIndex := redirectStdErrorIndex(args)
 
 	if redirectStdOutputIndex == -1 && redirectStdErrorIndex == -1 {
@@ -121,6 +122,7 @@ func prepareArgs(cmd *CmdWithArgs, args []string) {
 
 	if redirectStdOutputIndex != -1 {
 		cmd.RedirectOptions.StdOutputFile = args[redirectStdOutputIndex+1]
+		cmd.RedirectOptions.StdOutputAppend = appendStdOutput
 	}
 
 	if redirectStdErrorIndex != -1 {
@@ -128,14 +130,18 @@ func prepareArgs(cmd *CmdWithArgs, args []string) {
 	}
 }
 
-func redirectStdOutputIndex(args []string) int {
+func redirectStdOutputIndex(args []string) (int, bool) {
 	for i, arg := range args {
 		if arg == ">" || arg == "1>" {
-			return i
+			return i, false
+		}
+
+		if arg == ">>" || arg == "1>>" {
+			return i, true
 		}
 	}
 
-	return -1
+	return -1, false
 }
 
 func redirectStdErrorIndex(args []string) int {

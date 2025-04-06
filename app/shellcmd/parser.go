@@ -6,6 +6,7 @@ type RedirectOptions struct {
 	StdOutputFile   string
 	StdErrorFile    string
 	StdOutputAppend bool
+	StdErrorAppend  bool
 }
 
 type CmdWithArgs struct {
@@ -98,7 +99,7 @@ func prepareArgs(cmd *CmdWithArgs, args []string) {
 	}
 
 	redirectStdOutputIndex, appendStdOutput := redirectStdOutputIndex(args)
-	redirectStdErrorIndex := redirectStdErrorIndex(args)
+	redirectStdErrorIndex, appendStdError := redirectStdErrorIndex(args)
 
 	if redirectStdOutputIndex == -1 && redirectStdErrorIndex == -1 {
 		cmd.Args = args
@@ -127,6 +128,7 @@ func prepareArgs(cmd *CmdWithArgs, args []string) {
 
 	if redirectStdErrorIndex != -1 {
 		cmd.RedirectOptions.StdErrorFile = args[redirectStdErrorIndex+1]
+		cmd.RedirectOptions.StdErrorAppend = appendStdError
 	}
 }
 
@@ -144,12 +146,16 @@ func redirectStdOutputIndex(args []string) (int, bool) {
 	return -1, false
 }
 
-func redirectStdErrorIndex(args []string) int {
+func redirectStdErrorIndex(args []string) (int, bool) {
 	for i, arg := range args {
 		if arg == "2>" {
-			return i
+			return i, false
+		}
+
+		if arg == "2>>" {
+			return i, true
 		}
 	}
 
-	return -1
+	return -1, false
 }

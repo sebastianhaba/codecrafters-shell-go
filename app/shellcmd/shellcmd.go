@@ -48,6 +48,10 @@ func (c ShellAutoCompleter) Do(line []rune, pos int) (newLine [][]rune, length i
 		commands = append(commands, key)
 	}
 
+	for _, cmd := range getCmdsInPathEnv() {
+		commands = append(commands, cmd)
+	}
+
 	input := string(line[:pos])
 
 	for _, cmd := range commands {
@@ -275,6 +279,24 @@ func getHomeDir() string {
 	}
 
 	return homeDirectory
+}
+
+func getCmdsInPathEnv() []string {
+	pathEnv := os.Getenv("PATH")
+	separator := ":"
+	if runtime.GOOS == "windows" {
+		separator = ";"
+	}
+	directoriesToSearch := strings.Split(pathEnv, separator)
+	var result []string
+	for _, directory := range directoriesToSearch {
+		files, _ := os.ReadDir(directory)
+		for _, file := range files {
+			result = append(result, file.Name())
+		}
+	}
+
+	return result
 }
 
 func isCmdInPath(cmd string) (bool, string) {

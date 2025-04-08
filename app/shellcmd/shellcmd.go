@@ -58,7 +58,7 @@ func (c ShellAutoCompleter) Do(line []rune, pos int) (newLine [][]rune, length i
 	}
 
 	// Brak dopasowania
-	return nil, 0
+	return [][]rune{[]rune("\a")}, 0
 }
 
 func New(name string) *ShellCmd {

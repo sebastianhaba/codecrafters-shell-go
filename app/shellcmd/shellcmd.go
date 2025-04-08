@@ -40,6 +40,27 @@ func init() {
 	supportedCmd["type"] = cmdType
 }
 
+type ShellAutoCompleter struct{}
+
+func (c ShellAutoCompleter) Do(line []rune, pos int) (newLine [][]rune, length int) {
+	commands := make([]string, 0)
+	for key := range supportedCmd {
+		commands = append(commands, key)
+	}
+
+	input := string(line[:pos])
+
+	for _, cmd := range commands {
+		if strings.HasPrefix(cmd, input) {
+			cmd = strings.Replace(cmd, input, "", 1) + " "
+			return [][]rune{[]rune(cmd)}, len(cmd)
+		}
+	}
+
+	// Brak dopasowania
+	return nil, 0
+}
+
 func New(name string) *ShellCmd {
 	cmdFunc, exists := supportedCmd[name]
 	var extCmdPath string
@@ -57,6 +78,10 @@ func New(name string) *ShellCmd {
 		run:  cmdFunc,
 		path: extCmdPath,
 	}
+}
+
+func AutoComplete() ShellAutoCompleter {
+	return ShellAutoCompleter{}
 }
 
 func (s *ShellCmd) Run(cmd *CmdWithArgs) string {

@@ -3,6 +3,7 @@ package shellcmd
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"os/user"
@@ -41,6 +42,14 @@ func init() {
 	supportedCmd["pwd"] = cmdPwd
 	supportedCmd["cd"] = cmdCd
 	supportedCmd["type"] = cmdType
+
+	/*
+		supportedCmd["xyz_foo"] = cmdExit
+		supportedCmd["xyz_foo_bar"] = cmdExit
+		supportedCmd["xyz_foo_bar_baz"] = cmdExit
+
+	*/
+
 }
 
 type ShellAutoCompleter struct{}
@@ -77,23 +86,30 @@ func (c ShellAutoCompleter) Do(line []rune, pos int) (newLine [][]rune, length i
 	}
 
 	if len(possibleMatches) > 1 {
-		if autoCompleteTabs == input {
-			sort.Strings(possibleMatches)
-			autocomplete := ""
-			for index, cmd := range possibleMatches {
-				if index == 0 {
-					autocomplete += input + cmd
-				} else {
-					autocomplete += "  " + input + cmd
+		if sameSize(possibleMatches) {
+			if autoCompleteTabs == input {
+				sort.Strings(possibleMatches)
+				autocomplete := ""
+
+				for index, cmd := range possibleMatches {
+					if index == 0 {
+						autocomplete += input + cmd
+					} else {
+						autocomplete += "  " + input + cmd
+					}
 				}
+
+				autocomplete = "\n" + autocomplete + "\n$ " + input
+
+				return [][]rune{[]rune(autocomplete)}, len(autocomplete)
+			} else {
+				autoCompleteTabs = input
+				return [][]rune{[]rune("\a")}, 0
 			}
-
-			autocomplete = "\n" + autocomplete + "\n$ " + input
-
-			return [][]rune{[]rune(autocomplete)}, len(autocomplete)
 		} else {
-			autoCompleteTabs = input
-			return [][]rune{[]rune("\a")}, 0
+			autocomplete := getBestMatch(possibleMatches)
+			return [][]rune{[]rune(autocomplete)}, len(autocomplete)
+
 		}
 	}
 
@@ -372,4 +388,28 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func sameSize(s []string) bool {
+	maxLen := len(s[0])
+	for _, a := range s {
+		if len(a) != maxLen {
+			return false
+		}
+	}
+
+	return true
+}
+
+func getBestMatch(s []string) string {
+	maxLen := math.MaxInt32
+	bestMatch := ""
+	for _, a := range s {
+		if len(a) < maxLen {
+			bestMatch = a
+			maxLen = len(a)
+		}
+	}
+
+	return bestMatch
 }

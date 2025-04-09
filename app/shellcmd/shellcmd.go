@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/user"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -24,6 +25,8 @@ type runFunParams struct {
 type runFunc func(p runFunParams) string
 
 var supportedCmd = map[string]runFunc{}
+
+var autoCompleteTabs = ""
 
 type ShellCmd struct {
 	Name string
@@ -53,11 +56,44 @@ func (c ShellAutoCompleter) Do(line []rune, pos int) (newLine [][]rune, length i
 	}
 
 	input := string(line[:pos])
+	input = strings.Replace(input, "\a", "", -1)
+
+	possibleMatches := make([]string, 0)
 
 	for _, cmd := range commands {
 		if strings.HasPrefix(cmd, input) {
-			cmd = strings.Replace(cmd, input, "", 1) + " "
-			return [][]rune{[]rune(cmd)}, len(cmd)
+			cmd = strings.Replace(cmd, input, "", 1)
+			if contains(possibleMatches, cmd) {
+				continue
+			}
+
+			possibleMatches = append(possibleMatches, cmd)
+		}
+	}
+
+	if len(possibleMatches) == 1 {
+		autoCompleteTabs = ""
+		return [][]rune{[]rune(possibleMatches[0] + " ")}, len(possibleMatches[0])
+	}
+
+	if len(possibleMatches) > 1 {
+		if autoCompleteTabs == input {
+			sort.Strings(possibleMatches)
+			autocomplete := ""
+			for index, cmd := range possibleMatches {
+				if index == 0 {
+					autocomplete += input + cmd
+				} else {
+					autocomplete += "  " + input + cmd
+				}
+			}
+
+			autocomplete = "\n" + autocomplete + "\n$ " + input
+
+			return [][]rune{[]rune(autocomplete)}, len(autocomplete)
+		} else {
+			autoCompleteTabs = input
+			return [][]rune{[]rune("\a")}, 0
 		}
 	}
 
@@ -327,4 +363,13 @@ func checkCmdInPath(cmd string) string {
 	}
 
 	return fmt.Sprintf("%s: not found", cmd)
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

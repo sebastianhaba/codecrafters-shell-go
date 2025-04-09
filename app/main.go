@@ -27,6 +27,7 @@ func main() {
 		}
 
 		input = strings.TrimSpace(input)
+
 		if input == "" {
 			continue
 		}

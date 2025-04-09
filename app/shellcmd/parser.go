@@ -9,10 +9,13 @@ type RedirectOptions struct {
 	StdErrorAppend  bool
 }
 
+// CmdWithArgs represents a command along with its arguments and redirection options.
+// The structure contains fields for the command name, argument list, and options
+// for redirecting standard output and error output.
 type CmdWithArgs struct {
-	Name            string
-	Args            []string
-	RedirectOptions RedirectOptions
+	Name            string          // Command name
+	Args            []string        // Argument list
+	RedirectOptions RedirectOptions // Output redirection options
 }
 
 func ParseArgs(input string) *CmdWithArgs {
